@@ -5,7 +5,7 @@
  * 不读取任何用户凭据；输出脱敏后落盘。
  */
 import { spawn, spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { homedir, hostname, platform, arch, release } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -53,6 +53,43 @@ for (const [k, v] of Object.entries(process.env)) {
 }
 Object.assign(SAFE_ENV, { NO_COLOR: "1", TERM: "dumb", CI: "1", FORCE_COLOR: "0" });
 
+const CAPTURE_DIR_FULL = "/tmp/probe-out/captured";
+
+function copyCapturedFiles(agentId, dirPath, limit = 10, maxBytes = 512 * 1024) {
+  const manifest = [];
+  const walk = (dir, depth = 0) => {
+    if (manifest.length >= limit || depth > 3) return;
+    let entries = [];
+    try {
+      entries = readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (manifest.length >= limit) return;
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walk(full, depth + 1);
+      else if (entry.isFile()) {
+        try {
+          const stat = statSync(full);
+          if (stat.size > maxBytes) {
+            manifest.push({ path: full.replace("/tmp/probe-out", "out"), bytes: stat.size, copied: false, reason: "too-large" });
+            continue;
+          }
+          const dest = join(CAPTURE_DIR_FULL, agentId, full.replace("/tmp/probe-out/", ""));
+          mkdirSync(dirname(dest), { recursive: true });
+          copyFileSync(full, dest);
+          manifest.push({ path: dest.replace("/tmp/probe-out", "out"), bytes: stat.size, copied: true });
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  };
+  walk(dirPath);
+  return manifest;
+}
+
 function collectDir(dirPath, limit = 20) {
   const out = [];
   const walk = (dir, depth = 0) => {
@@ -82,7 +119,7 @@ function collectDir(dirPath, limit = 20) {
   return out;
 }
 
-function runSync({ cmd, timeoutMs = 20000, stdin = null, captureDir = null }) {
+function runSync({ cmd, timeoutMs = 20000, stdin = null, captureDir = null, captureFull = false, agentIdForCapture = "capture" }) {
   const started = Date.now();
   if (captureDir) {
     try {
@@ -108,7 +145,14 @@ function runSync({ cmd, timeoutMs = 20000, stdin = null, captureDir = null }) {
     durationMs: Date.now() - started,
     stdout: sanitize(result.stdout),
     stderr: sanitize(result.stderr),
-    ...(captureDir ? { capturedFiles: collectDir(captureDir) } : {}),
+    ...(captureDir
+      ? {
+          capturedFiles:
+            captureFull && captureDir
+              ? copyCapturedFiles(agentIdForCapture, captureDir)
+              : collectDir(captureDir),
+        }
+      : {}),
   };
 }
 
@@ -189,7 +233,7 @@ for (const command of agent.commands ?? []) {
   if (Array.isArray(command.stdinLines) && command.stdinLines.length) {
     probes.push(await runInteractive({ ...command, lines: command.stdinLines }));
   } else {
-    probes.push(runSync(command));
+    probes.push(runSync({ ...command, agentIdForCapture: agent.id }));
   }
 }
 
