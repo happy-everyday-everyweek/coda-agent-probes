@@ -1,0 +1,80 @@
+name: agent-probes
+
+# 公开 Agent CLI 的协议勘察：只跑 --version/--help/文档化握手，无凭据。
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "results/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: probes-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  probe:
+    if: "!startsWith(github.event.head_commit.message, 'results:')"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { agent: claude,   package: "@anthropic-ai/claude-code" }
+          - { agent: codex,    package: "@openai/codex" }
+          - { agent: gemini,   package: "@google/gemini-cli" }
+          - { agent: opencode, package: "opencode-ai" }
+          - { agent: qwen,     package: "@qwen-code/qwen-code" }
+          - { agent: copilot,  package: "@github/copilot" }
+          - { agent: auggie,   package: "@augmentcode/auggie" }
+          - { agent: crush,    package: "@charmland/crush" }
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - name: 使用镜像 registry（加速安装，不改包源内容）
+        run: npm config set registry https://registry.npmmirror.com
+      - name: 安装 ${{ matrix.package }}
+        continue-on-error: true
+        run: npm install -g "${{ matrix.package }}"
+      - name: 勘察 ${{ matrix.agent }}
+        continue-on-error: true
+        run: node scripts/probe.mjs "${{ matrix.agent }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: probe-${{ matrix.agent }}
+          path: out/
+          if-no-files-found: ignore
+          retention-days: 14
+
+  collect:
+    needs: probe
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: probe-*
+          path: out
+          merge-multiple: true
+      - name: 合并结果
+        run: node scripts/merge.mjs
+      - name: 提交结果回仓库
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add out results
+          if git diff --cached --quiet; then
+            echo "no changes"
+          else
+            git commit -m "results: agent protocol probe $(date -u +%FT%TZ)"
+            git push
+          fi
