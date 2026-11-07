@@ -4,8 +4,8 @@
  * 只用公开入口：--version / --help / 官方文档化的 JSON-RPC 握手。
  * 不读取任何用户凭据；输出脱敏后落盘。
  */
-import { spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { spawn, spawnSync } from "node:child_process";
+import { mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { homedir, hostname, platform, arch, release } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -53,8 +53,44 @@ for (const [k, v] of Object.entries(process.env)) {
 }
 Object.assign(SAFE_ENV, { NO_COLOR: "1", TERM: "dumb", CI: "1", FORCE_COLOR: "0" });
 
-function run({ cmd, timeoutMs = 20000, stdin = null }) {
+function collectDir(dirPath, limit = 20) {
+  const out = [];
+  const walk = (dir, depth = 0) => {
+    if (out.length >= limit || depth > 3) return;
+    let entries = [];
+    try {
+      entries = readdirSync(dir, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name));
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      if (out.length >= limit) return;
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walk(full, depth + 1);
+      else if (entry.isFile()) {
+        try {
+          const stat = statSync(full);
+          const head = readFileSync(full, "utf8").slice(0, 3000);
+          out.push({ path: full.replace("/tmp/probe-out", "out"), bytes: stat.size, head: sanitize(head) });
+        } catch {
+          /* ignore */
+        }
+      }
+    }
+  };
+  walk(dirPath);
+  return out;
+}
+
+function runSync({ cmd, timeoutMs = 20000, stdin = null, captureDir = null }) {
   const started = Date.now();
+  if (captureDir) {
+    try {
+      mkdirSync(captureDir, { recursive: true });
+    } catch {
+      /* ignore */
+    }
+  }
   const result = spawnSync("bash", ["-lc", cmd], {
     cwd: root,
     env: SAFE_ENV,
@@ -72,7 +108,70 @@ function run({ cmd, timeoutMs = 20000, stdin = null }) {
     durationMs: Date.now() - started,
     stdout: sanitize(result.stdout),
     stderr: sanitize(result.stderr),
+    ...(captureDir ? { capturedFiles: collectDir(captureDir) } : {}),
   };
+}
+
+/** 多行 stdin 交互：先写 line1，等 delay，再写 line2……直到进程退出。 */
+function runInteractive({ cmd, lines = [], timeoutMs = 20000, lineDelayMs = 800 }) {
+  return new Promise((resolve) => {
+    const started = Date.now();
+    const child = spawn("bash", ["-lc", cmd], { cwd: root, env: SAFE_ENV, stdio: ["pipe", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+    let finished = false;
+    let idx = 0;
+    const timers = [];
+
+    const finish = (extra = {}) => {
+      if (finished) return;
+      finished = true;
+      for (const t of timers) clearTimeout(t);
+      try {
+        child.kill("SIGKILL");
+      } catch {
+        /* ignore */
+      }
+      resolve({
+        cmd,
+        timeoutMs,
+        exitCode: extra.exitCode ?? null,
+        signal: extra.signal ?? null,
+        timedOut: !!extra.timedOut,
+        durationMs: Date.now() - started,
+        stdout: sanitize(stdout),
+        stderr: sanitize(stderr),
+      });
+    };
+
+    child.stdout.on("data", (chunk) => {
+      stdout += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
+    child.on("error", () => finish({ exitCode: -1 }));
+    child.on("close", (code, signal) => finish({ exitCode: code, signal }));
+
+    const writeNext = () => {
+      if (idx >= lines.length) {
+        try {
+          child.stdin.end();
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
+      try {
+        child.stdin.write(`${lines[idx++]}\n`);
+      } catch {
+        /* ignore */
+      }
+      timers.push(setTimeout(writeNext, lineDelayMs));
+    };
+    writeNext();
+    timers.push(setTimeout(() => finish({ timedOut: true, signal: "SIGKILL" }), timeoutMs));
+  });
 }
 
 let packageVersion = null;
@@ -86,7 +185,13 @@ if (agent.package) {
 }
 
 const probes = [];
-for (const command of agent.commands ?? []) probes.push(run(command));
+for (const command of agent.commands ?? []) {
+  if (Array.isArray(command.stdinLines) && command.stdinLines.length) {
+    probes.push(await runInteractive({ ...command, lines: command.stdinLines }));
+  } else {
+    probes.push(runSync(command));
+  }
+}
 
 const output = {
   schemaVersion: 1,

@@ -21,6 +21,10 @@
         {
           "cmd": "claude -p --output-format stream-json --input-format stream-json --verbose --help",
           "timeoutMs": 20000
+        },
+        {
+          "cmd": "claude -p --output-format stream-json --verbose \"Reply with exactly one word: pong\"",
+          "timeoutMs": 60000
         }
       ]
     },
@@ -61,6 +65,15 @@
         {
           "cmd": "codex app-server generate-ts --help",
           "timeoutMs": 20000
+        },
+        {
+          "cmd": "codex exec --json --skip-git-repo-check \"Reply with exactly one word: pong\"",
+          "timeoutMs": 90000
+        },
+        {
+          "cmd": "codex app-server generate-json-schema --out /tmp/probe-out/codex-schema",
+          "timeoutMs": 120000,
+          "captureDir": "/tmp/probe-out/codex-schema"
         }
       ]
     },
@@ -81,6 +94,14 @@
           "cmd": "gemini --acp",
           "timeoutMs": 20000,
           "stdin": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1,\"clientCapabilities\":{\"fs\":{\"readTextFile\":false,\"writeTextFile\":false}},\"clientInfo\":{\"name\":\"coda-probe\",\"version\":\"0.0.1\"}}}\n"
+        },
+        {
+          "cmd": "gemini --acp",
+          "timeoutMs": 25000,
+          "stdinLines": [
+            "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1,\"clientCapabilities\":{\"fs\":{\"readTextFile\":false,\"writeTextFile\":false}},\"clientInfo\":{\"name\":\"coda-probe\",\"version\":\"0.0.1\"}}}",
+            "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"session/new\",\"params\":{\"cwd\":\"/tmp\",\"mcpServers\":[]}}"
+          ]
         }
       ]
     },
@@ -109,6 +130,14 @@
           "cmd": "opencode acp",
           "timeoutMs": 20000,
           "stdin": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1,\"clientCapabilities\":{\"fs\":{\"readTextFile\":false,\"writeTextFile\":false}},\"clientInfo\":{\"name\":\"coda-probe\",\"version\":\"0.0.1\"}}}\n"
+        },
+        {
+          "cmd": "opencode acp",
+          "timeoutMs": 25000,
+          "stdinLines": [
+            "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1,\"clientCapabilities\":{\"fs\":{\"readTextFile\":false,\"writeTextFile\":false}},\"clientInfo\":{\"name\":\"coda-probe\",\"version\":\"0.0.1\"}}}",
+            "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"session/new\",\"params\":{\"cwd\":\"/tmp\",\"mcpServers\":[]}}"
+          ]
         }
       ]
     },
@@ -128,6 +157,10 @@
         {
           "cmd": "qwen serve --help",
           "timeoutMs": 20000
+        },
+        {
+          "cmd": "qwen -p \"Reply with exactly one word: pong\" -o stream-json",
+          "timeoutMs": 60000
         }
       ]
     },
@@ -143,6 +176,10 @@
         {
           "cmd": "copilot --help",
           "timeoutMs": 20000
+        },
+        {
+          "cmd": "copilot -p \"Reply with exactly one word: pong\"",
+          "timeoutMs": 60000
         }
       ]
     },
@@ -158,6 +195,10 @@
         {
           "cmd": "auggie --help",
           "timeoutMs": 20000
+        },
+        {
+          "cmd": "auggie -p --output-format json \"Reply with exactly one word: pong\"",
+          "timeoutMs": 60000
         }
       ]
     },
