@@ -155,6 +155,20 @@
             "prompt": "Reply with exactly one word: pong",
             "timeoutMs": 100000
           }
+        },
+        {
+          "cmd": "opencode serve --port 8797 --hostname 127.0.0.1 2>&1",
+          "timeoutMs": 25000,
+          "serverProbe": {
+            "port": 8797,
+            "paths": [
+              "/global/health",
+              "/api/health",
+              "/api/info",
+              "/doc"
+            ],
+            "waitMs": 12000
+          }
         }
       ]
     },
@@ -303,6 +317,19 @@
         {
           "cmd": "codebuddy -p --output-format stream-json \"Reply with exactly one word: pong\"",
           "timeoutMs": 60000
+        },
+        {
+          "cmd": "codebuddy --serve --port 8799 --session-id probe 2>&1",
+          "timeoutMs": 25000,
+          "serverProbe": {
+            "port": 8799,
+            "paths": [
+              "/api/v1/health",
+              "/api/openapi.json",
+              "/api/docs"
+            ],
+            "waitMs": 12000
+          }
         }
       ]
     },
@@ -338,6 +365,23 @@
           "acpFlow": {
             "prompt": "ping",
             "timeoutMs": 35000
+          }
+        },
+        {
+          "cmd": "export PATH=\"$HOME/.kimi-code/bin:$PATH\"; kimi -p \"Reply with exactly one word: pong\" --output-format stream-json",
+          "timeoutMs": 60000
+        },
+        {
+          "cmd": "export PATH=\"$HOME/.kimi-code/bin:$PATH\"; kimi web --port 8798 2>&1",
+          "timeoutMs": 25000,
+          "serverProbe": {
+            "port": 8798,
+            "paths": [
+              "/openapi.json",
+              "/asyncapi.json",
+              "/"
+            ],
+            "waitMs": 12000
           }
         }
       ]

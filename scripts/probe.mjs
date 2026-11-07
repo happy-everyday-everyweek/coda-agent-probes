@@ -157,6 +157,56 @@ function runSync({ cmd, timeoutMs = 20000, stdin = null, captureDir = null, capt
   };
 }
 
+/** 服务型 CLI：启动后探测 HTTP 端点（health/openapi），然后结束进程。 */
+function runServerProbe({ cmd, serverProbe = {}, timeoutMs = 30000 }) {
+  return new Promise((resolve) => {
+    const started = Date.now();
+    const child = spawn("bash", ["-lc", cmd], { cwd: root, env: SAFE_ENV, stdio: ["ignore", "pipe", "pipe"] });
+    const lines = [];
+    let stderr = "";
+    let finished = false;
+    const timers = [];
+    const finish = (extra = {}) => {
+      if (finished) return;
+      finished = true;
+      for (const t of timers) clearTimeout(t);
+      try { child.kill("SIGKILL"); } catch { /* ignore */ }
+      resolve({
+        cmd,
+        timeoutMs,
+        exitCode: extra.exitCode ?? null,
+        timedOut: !!extra.timedOut,
+        durationMs: Date.now() - started,
+        stdout: sanitize(lines.join("\n")),
+        stderr: sanitize(stderr),
+        httpProbes: extra.httpProbes ?? [],
+      });
+    };
+    child.stdout.on("data", (chunk) => { lines.push(String(chunk)); });
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.on("close", (code) => finish({ exitCode: code }));
+    child.on("error", () => finish({ exitCode: -1 }));
+    timers.push(setTimeout(() => finish({ timedOut: true }), timeoutMs));
+
+    const probeHttp = async () => {
+      const port = serverProbe.port;
+      const results = [];
+      for (const path of serverProbe.paths ?? []) {
+        try {
+          const res = await fetch(`http://127.0.0.1:${port}${path}`, { signal: AbortSignal.timeout(5000) });
+          const text = await res.text();
+          results.push({ path, status: res.status, head: sanitize(text.slice(0, 1500)) });
+        } catch (err) {
+          results.push({ path, error: String(err?.message ?? err).slice(0, 200) });
+        }
+      }
+      finish({ httpProbes: results });
+    };
+    timers.push(setTimeout(() => { void probeHttp(); }, serverProbe.waitMs ?? 8000));
+    timers.push(setTimeout(() => finish({ timedOut: true }), serverProbe.timeoutMs ?? timeoutMs));
+  });
+}
+
 /** ACP 动态流程：initialize → session/new → session/prompt，收集全部帧直到结束或超时。 */
 function runAcpFlow({ cmd, acpFlow, timeoutMs = 120000 }) {
   return new Promise((resolve) => {
@@ -303,7 +353,9 @@ if (agent.package) {
 
 const probes = [];
 for (const command of agent.commands ?? []) {
-  if (command.acpFlow) {
+  if (command.serverProbe) {
+    probes.push(await runServerProbe(command));
+  } else if (command.acpFlow) {
     probes.push(await runAcpFlow(command));
   } else if (Array.isArray(command.stdinLines) && command.stdinLines.length) {
     probes.push(await runInteractive({ ...command, lines: command.stdinLines }));
