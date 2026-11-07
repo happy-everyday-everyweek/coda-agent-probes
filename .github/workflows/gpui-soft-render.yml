@@ -1,0 +1,36 @@
+name: gpui-software-render-probe
+
+# 验证 CI runner 能否在「无 GPU」环境下提供 GPU API（Vulkan 软件实现 lavapipe/llvmpipe），
+# 这是 GPUI 在 headless/CI 中运行的前提。不编译 GPUI 本身（Zed rev 固定留到下一步）。
+on:
+  push:
+    paths:
+      - ".github/workflows/gpui-soft-render.yml"
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 安装 Mesa 软件 Vulkan/GL 与虚拟显示
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq mesa-vulkan-drivers vulkan-tools xvfb libgl1-mesa-dri mesa-utils
+      - name: Vulkan 软件实现探测（lavapipe）
+        run: |
+          echo "== ICD 文件"; ls -l /usr/share/vulkan/icd.d/ || true
+          echo "== vulkaninfo（Xvfb 下）"
+          Xvfb :99 -screen 0 1280x800x24 &
+          sleep 2
+          DISPLAY=:99 vulkaninfo --summary 2>&1 | head -60 || true
+      - name: OpenGL 软件实现探测（llvmpipe）
+        run: |
+          DISPLAY=:99 glxinfo -B 2>&1 | head -25 || true
+      - name: Rust 工具链与 GPUI 依赖可行性
+        run: |
+          rustup toolchain install stable --profile minimal -q
+          cargo --version
+          sudo apt-get install -y -qq libfontconfig1-dev libfreetype6-dev libwayland-dev libxkbcommon-dev libx11-dev libxcb1-dev pkg-config clang cmake
+          echo "== 系统依赖 OK"
+          echo "下一步：pin Zed rev 后 cargo build 最小 GPUI 示例（15 分钟时限内先不跑）"
