@@ -263,6 +263,10 @@
         {
           "cmd": "qodercn -p --help 2>&1 | head -40",
           "timeoutMs": 20000
+        },
+        {
+          "cmd": "qodercn -p --output-format stream-json \"Reply with exactly one word: pong\"",
+          "timeoutMs": 60000
         }
       ]
     },
@@ -295,6 +299,10 @@
             "prompt": "Reply with exactly one word: pong",
             "timeoutMs": 25000
           }
+        },
+        {
+          "cmd": "codebuddy -p --output-format stream-json \"Reply with exactly one word: pong\"",
+          "timeoutMs": 60000
         }
       ]
     },
@@ -319,6 +327,18 @@
         {
           "cmd": "export PATH=\"$HOME/.kimi/bin:$HOME/.kimi-code/bin:$HOME/.local/bin:$PATH\"; kimi acp --help || true",
           "timeoutMs": 20000
+        },
+        {
+          "cmd": "export PATH=\"$HOME/.kimi-code/bin:$HOME/.local/bin:$PATH\"; kimi -p --output-format stream-json \"Reply with exactly one word: pong\"",
+          "timeoutMs": 60000
+        },
+        {
+          "cmd": "export PATH=\"$HOME/.kimi-code/bin:$HOME/.local/bin:$PATH\"; kimi acp",
+          "timeoutMs": 40000,
+          "acpFlow": {
+            "prompt": "ping",
+            "timeoutMs": 35000
+          }
         }
       ]
     },
