@@ -23,13 +23,15 @@ jobs:
           echo "== vulkaninfo（Xvfb 下）"
           Xvfb :99 -screen 0 1280x800x24 &
           sleep 2
-          DISPLAY=:99 vulkaninfo --summary 2>&1 | head -60 || true
+          DISPLAY=:99 vulkaninfo --summary 2>&1 | tee /tmp/vk.txt | head -80 || true
+          echo "== 关键字段"
+          grep -E "deviceName|driverName|driverInfo|apiVersion|GPU id" /tmp/vk.txt | head -20 || true
       - name: OpenGL 软件实现探测（llvmpipe）
         run: |
-          DISPLAY=:99 glxinfo -B 2>&1 | head -25 || true
+          DISPLAY=:99 glxinfo -B 2>&1 | grep -E "OpenGL renderer|OpenGL version|direct rendering" | head -5 || true
       - name: Rust 工具链与 GPUI 依赖可行性
         run: |
-          rustup toolchain install stable --profile minimal -q
+          rustup toolchain install stable --profile minimal --no-self-update 2>&1 | tail -2
           cargo --version
           sudo apt-get install -y -qq libfontconfig1-dev libfreetype6-dev libwayland-dev libxkbcommon-dev libx11-dev libxcb1-dev pkg-config clang cmake
           echo "== 系统依赖 OK"
