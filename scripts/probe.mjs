@@ -53,7 +53,7 @@ for (const [k, v] of Object.entries(process.env)) {
 }
 Object.assign(SAFE_ENV, { NO_COLOR: "1", TERM: "dumb", CI: "1", FORCE_COLOR: "0" });
 
-const CAPTURE_DIR_FULL = "/tmp/probe-out/captured";
+const CAPTURE_DIR_FULL = join(root, "out", "captured");
 
 function copyCapturedFiles(agentId, dirPath, limit = 10, maxBytes = 512 * 1024) {
   const manifest = [];
@@ -79,7 +79,7 @@ function copyCapturedFiles(agentId, dirPath, limit = 10, maxBytes = 512 * 1024) 
           const dest = join(CAPTURE_DIR_FULL, agentId, full.replace("/tmp/probe-out/", ""));
           mkdirSync(dirname(dest), { recursive: true });
           copyFileSync(full, dest);
-          manifest.push({ path: dest.replace("/tmp/probe-out", "out"), bytes: stat.size, copied: true });
+          manifest.push({ path: dest.replace(root + "/", ""), bytes: stat.size, copied: true });
         } catch {
           /* ignore */
         }
