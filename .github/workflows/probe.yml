@@ -39,6 +39,8 @@ jobs:
           node-version: "24"
       - name: 使用镜像 registry（加速安装，不改包源内容）
         run: npm config set registry https://registry.npmmirror.com
+      - name: 脚本语法检查（避免静默失败）
+        run: node --check scripts/probe.mjs && node --check scripts/merge.mjs
       - name: 安装 ${{ matrix.package }}
         continue-on-error: true
         run: npm install -g "${{ matrix.package }}"

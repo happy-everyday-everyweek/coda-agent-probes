@@ -93,7 +93,7 @@ const output = {
   generatedAt: new Date().toISOString(),
   agent,
   packageVersion,
-  runner: { os: platform(), arch(), release: release(), node: process.version, host: hostname() },
+  runner: { os: platform(), arch: arch(), release: release(), node: process.version, host: hostname() },
   probes,
 };
 
