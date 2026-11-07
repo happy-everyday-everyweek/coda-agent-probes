@@ -69,7 +69,8 @@ jobs:
           merge-multiple: true
       - name: 合并结果
         run: node scripts/merge.mjs
-      - name: 提交结果回仓库
+      - name: 提交结果回仓库（失败不影响勘察，artifacts 已上传）
+        continue-on-error: true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

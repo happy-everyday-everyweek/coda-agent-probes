@@ -1,50 +1,180 @@
 {
   "schemaVersion": 1,
   "agents": [
-    { "id": "claude", "package": "@anthropic-ai/claude-code", "bin": "claude",
+    {
+      "id": "claude",
+      "package": "@anthropic-ai/claude-code",
+      "bin": "claude",
       "commands": [
-        { "cmd": "claude --version", "timeoutMs": 20000 },
-        { "cmd": "claude --help", "timeoutMs": 20000 },
-        { "cmd": "claude -p --help", "timeoutMs": 20000 }
-      ] },
-    { "id": "codex", "package": "@openai/codex", "bin": "codex",
+        {
+          "cmd": "claude --version",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "claude --help",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "claude -p --help",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "claude -p --output-format stream-json --input-format stream-json --verbose --help",
+          "timeoutMs": 20000
+        }
+      ]
+    },
+    {
+      "id": "codex",
+      "package": "@openai/codex",
+      "bin": "codex",
       "commands": [
-        { "cmd": "codex --version", "timeoutMs": 20000 },
-        { "cmd": "codex --help", "timeoutMs": 20000 },
-        { "cmd": "codex app-server --help", "timeoutMs": 20000 },
-        { "cmd": "codex app-server", "timeoutMs": 15000,
-          "stdin": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"clientInfo\":{\"name\":\"coda-probe\",\"version\":\"0.0.1\"}}}\n" }
-      ] },
-    { "id": "gemini", "package": "@google/gemini-cli", "bin": "gemini",
+        {
+          "cmd": "codex --version",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "codex --help",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "codex app-server --help",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "codex app-server",
+          "timeoutMs": 15000,
+          "stdin": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"clientInfo\":{\"name\":\"coda-probe\",\"version\":\"0.0.1\"}}}\n"
+        },
+        {
+          "cmd": "codex exec --help",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "codex app-server generate-json-schema --help",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "codex app-server generate-json-schema",
+          "timeoutMs": 90000
+        },
+        {
+          "cmd": "codex app-server generate-ts --help",
+          "timeoutMs": 20000
+        }
+      ]
+    },
+    {
+      "id": "gemini",
+      "package": "@google/gemini-cli",
+      "bin": "gemini",
       "commands": [
-        { "cmd": "gemini --version", "timeoutMs": 20000 },
-        { "cmd": "gemini --help", "timeoutMs": 20000 }
-      ] },
-    { "id": "opencode", "package": "opencode-ai", "bin": "opencode",
+        {
+          "cmd": "gemini --version",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "gemini --help",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "gemini --acp",
+          "timeoutMs": 20000,
+          "stdin": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1,\"clientCapabilities\":{\"fs\":{\"readTextFile\":false,\"writeTextFile\":false}},\"clientInfo\":{\"name\":\"coda-probe\",\"version\":\"0.0.1\"}}}\n"
+        }
+      ]
+    },
+    {
+      "id": "opencode",
+      "package": "opencode-ai",
+      "bin": "opencode",
       "commands": [
-        { "cmd": "opencode --version", "timeoutMs": 20000 },
-        { "cmd": "opencode --help", "timeoutMs": 20000 },
-        { "cmd": "opencode serve --help", "timeoutMs": 20000 }
-      ] },
-    { "id": "qwen", "package": "@qwen-code/qwen-code", "bin": "qwen",
+        {
+          "cmd": "opencode --version",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "opencode --help",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "opencode serve --help",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "opencode acp --help",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "opencode acp",
+          "timeoutMs": 20000,
+          "stdin": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1,\"clientCapabilities\":{\"fs\":{\"readTextFile\":false,\"writeTextFile\":false}},\"clientInfo\":{\"name\":\"coda-probe\",\"version\":\"0.0.1\"}}}\n"
+        }
+      ]
+    },
+    {
+      "id": "qwen",
+      "package": "@qwen-code/qwen-code",
+      "bin": "qwen",
       "commands": [
-        { "cmd": "qwen --version", "timeoutMs": 20000 },
-        { "cmd": "qwen --help", "timeoutMs": 20000 }
-      ] },
-    { "id": "copilot", "package": "@github/copilot", "bin": "copilot",
+        {
+          "cmd": "qwen --version",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "qwen --help",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "qwen serve --help",
+          "timeoutMs": 20000
+        }
+      ]
+    },
+    {
+      "id": "copilot",
+      "package": "@github/copilot",
+      "bin": "copilot",
       "commands": [
-        { "cmd": "copilot --version", "timeoutMs": 20000 },
-        { "cmd": "copilot --help", "timeoutMs": 20000 }
-      ] },
-    { "id": "auggie", "package": "@augmentcode/auggie", "bin": "auggie",
+        {
+          "cmd": "copilot --version",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "copilot --help",
+          "timeoutMs": 20000
+        }
+      ]
+    },
+    {
+      "id": "auggie",
+      "package": "@augmentcode/auggie",
+      "bin": "auggie",
       "commands": [
-        { "cmd": "auggie --version", "timeoutMs": 20000 },
-        { "cmd": "auggie --help", "timeoutMs": 20000 }
-      ] },
-    { "id": "crush", "package": "@charmland/crush", "bin": "crush",
+        {
+          "cmd": "auggie --version",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "auggie --help",
+          "timeoutMs": 20000
+        }
+      ]
+    },
+    {
+      "id": "crush",
+      "package": "@charmland/crush",
+      "bin": "crush",
       "commands": [
-        { "cmd": "crush --version", "timeoutMs": 20000 },
-        { "cmd": "crush --help", "timeoutMs": 20000 }
-      ] }
+        {
+          "cmd": "crush --version",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "crush --help",
+          "timeoutMs": 20000
+        }
+      ]
+    }
   ]
 }
