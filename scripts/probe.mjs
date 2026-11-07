@@ -7,6 +7,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { copyFileSync, mkdirSync, readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
 import { homedir, hostname, platform, arch, release } from "node:os";
+import { createInterface } from "node:readline";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -55,7 +56,7 @@ Object.assign(SAFE_ENV, { NO_COLOR: "1", TERM: "dumb", CI: "1", FORCE_COLOR: "0"
 
 const CAPTURE_DIR_FULL = join(root, "out", "captured");
 
-function copyCapturedFiles(agentId, dirPath, limit = 10, maxBytes = 512 * 1024) {
+function copyCapturedFiles(agentId, dirPath, limit = 60, maxBytes = 1024 * 1024) {
   const manifest = [];
   const walk = (dir, depth = 0) => {
     if (manifest.length >= limit || depth > 3) return;
