@@ -22,14 +22,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { agent: claude,   package: "@anthropic-ai/claude-code" }
-          - { agent: codex,    package: "@openai/codex" }
-          - { agent: gemini,   package: "@google/gemini-cli" }
-          - { agent: opencode, package: "opencode-ai" }
-          - { agent: qwen,     package: "@qwen-code/qwen-code" }
-          - { agent: copilot,  package: "@github/copilot" }
-          - { agent: auggie,   package: "@augmentcode/auggie" }
-          - { agent: crush,    package: "@charmland/crush" }
+          - { agent: claude,     install: "npm install -g @anthropic-ai/claude-code" }
+          - { agent: codex,      install: "npm install -g @openai/codex" }
+          - { agent: gemini,     install: "npm install -g @google/gemini-cli" }
+          - { agent: opencode,   install: "npm install -g opencode-ai" }
+          - { agent: qwen,       install: "npm install -g @qwen-code/qwen-code" }
+          - { agent: copilot,    install: "npm install -g @github/copilot" }
+          - { agent: auggie,     install: "npm install -g @augmentcode/auggie" }
+          - { agent: crush,      install: "npm install -g @charmland/crush" }
+          # 国产 / 非国产补充（官方安装命令；无凭证级探测）
+          - { agent: codebuddy,  install: "npm install -g @tencent-ai/codebuddy-code" }
+          - { agent: qoder-cn,   install: "curl -fsSL https://qoder.com.cn/install | bash" }
+          - { agent: kimi,       install: "curl -fsSL https://code.kimi.com/kimi-code/install.sh | bash" }
+          - { agent: openclaw,   install: "npm install -g openclaw" }
+          - { agent: fx,         install: "curl -fsSL https://fx.sh/setup.sh | bash" }
+          - { agent: trae,       install: "sh -c \"$(curl -fsSL https://trae.cn/trae-cli/install_v2.sh)\"" }
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -41,9 +48,9 @@ jobs:
         run: npm config set registry https://registry.npmmirror.com
       - name: 脚本语法检查（避免静默失败）
         run: node --check scripts/probe.mjs && node --check scripts/merge.mjs
-      - name: 安装 ${{ matrix.package }}
+      - name: 安装 ${{ matrix.agent }}
         continue-on-error: true
-        run: npm install -g "${{ matrix.package }}"
+        run: ${{ matrix.install }}
       - name: 勘察 ${{ matrix.agent }}
         continue-on-error: true
         run: node scripts/probe.mjs "${{ matrix.agent }}"
