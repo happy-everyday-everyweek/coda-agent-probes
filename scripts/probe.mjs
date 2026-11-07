@@ -161,7 +161,7 @@ function runSync({ cmd, timeoutMs = 20000, stdin = null, captureDir = null, capt
 function runServerProbe({ cmd, serverProbe = {}, timeoutMs = 30000 }) {
   return new Promise((resolve) => {
     const started = Date.now();
-    const child = spawn("bash", ["-lc", cmd], { cwd: root, env: SAFE_ENV, stdio: ["ignore", "pipe", "pipe"] });
+    const child = spawn("bash", ["-lc", cmd], { cwd: root, env: SAFE_ENV, stdio: ["ignore", "pipe", "pipe"], detached: true });
     const lines = [];
     let stderr = "";
     let finished = false;
@@ -170,7 +170,7 @@ function runServerProbe({ cmd, serverProbe = {}, timeoutMs = 30000 }) {
       if (finished) return;
       finished = true;
       for (const t of timers) clearTimeout(t);
-      try { child.kill("SIGKILL"); } catch { /* ignore */ }
+      try { if (child.pid) process.kill(-child.pid, "SIGKILL"); else child.kill("SIGKILL"); } catch { try { if (child.pid) process.kill(-child.pid, "SIGKILL"); else child.kill("SIGKILL"); } catch { try { if (child.pid) process.kill(-child.pid, "SIGKILL"); else child.kill("SIGKILL"); } catch { try { child.kill("SIGKILL"); } catch { /* ignore */ } } } }
       resolve({
         cmd,
         timeoutMs,
@@ -211,7 +211,7 @@ function runServerProbe({ cmd, serverProbe = {}, timeoutMs = 30000 }) {
 function runAcpFlow({ cmd, acpFlow, timeoutMs = 120000 }) {
   return new Promise((resolve) => {
     const started = Date.now();
-    const child = spawn("bash", ["-lc", cmd], { cwd: root, env: SAFE_ENV, stdio: ["pipe", "pipe", "pipe"] });
+    const child = spawn("bash", ["-lc", cmd], { cwd: root, env: SAFE_ENV, stdio: ["pipe", "pipe", "pipe"], detached: true });
     const lines = [];
     let stderr = "";
     let finished = false;
@@ -222,7 +222,7 @@ function runAcpFlow({ cmd, acpFlow, timeoutMs = 120000 }) {
       if (finished) return;
       finished = true;
       for (const t of timers) clearTimeout(t);
-      try { child.kill("SIGKILL"); } catch { /* ignore */ }
+      try { if (child.pid) process.kill(-child.pid, "SIGKILL"); else child.kill("SIGKILL"); } catch { try { if (child.pid) process.kill(-child.pid, "SIGKILL"); else child.kill("SIGKILL"); } catch { try { if (child.pid) process.kill(-child.pid, "SIGKILL"); else child.kill("SIGKILL"); } catch { try { child.kill("SIGKILL"); } catch { /* ignore */ } } } }
       const raw = lines.join("\n");
       const parsed = lines.map((line) => {
         try { return JSON.parse(line); } catch { return { raw: line.slice(0, 500) }; }
@@ -283,7 +283,7 @@ function runAcpFlow({ cmd, acpFlow, timeoutMs = 120000 }) {
 function runInteractive({ cmd, lines = [], timeoutMs = 20000, lineDelayMs = 800 }) {
   return new Promise((resolve) => {
     const started = Date.now();
-    const child = spawn("bash", ["-lc", cmd], { cwd: root, env: SAFE_ENV, stdio: ["pipe", "pipe", "pipe"] });
+    const child = spawn("bash", ["-lc", cmd], { cwd: root, env: SAFE_ENV, stdio: ["pipe", "pipe", "pipe"], detached: true });
     let stdout = "";
     let stderr = "";
     let finished = false;
@@ -378,3 +378,4 @@ writeFileSync(join(root, "out", `${agent.id}.json`), JSON.stringify(output, null
 
 const found = probes.map((p) => `${p.cmd} → exit=${p.exitCode}${p.timedOut ? " (timeout)" : ""}`).join("; ");
 console.log(`probe ${agent.id}: ${found}`);
+process.exit(0);
