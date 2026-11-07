@@ -158,7 +158,7 @@ function runSync({ cmd, timeoutMs = 20000, stdin = null, captureDir = null, capt
 }
 
 /** 服务型 CLI：启动后探测 HTTP 端点（health/openapi），然后结束进程。 */
-function runServerProbe({ cmd, serverProbe = {}, timeoutMs = 30000 }) {
+function runServerProbe({ cmd, serverProbe = {}, timeoutMs = 30000, agentIdForCapture = "capture" }) {
   return new Promise((resolve) => {
     const started = Date.now();
     const child = spawn("bash", ["-lc", cmd], { cwd: root, env: SAFE_ENV, stdio: ["ignore", "pipe", "pipe"], detached: true });
@@ -195,7 +195,17 @@ function runServerProbe({ cmd, serverProbe = {}, timeoutMs = 30000 }) {
         try {
           const res = await fetch(`http://127.0.0.1:${port}${path}`, { signal: AbortSignal.timeout(5000) });
           const text = await res.text();
-          results.push({ path, status: res.status, head: sanitize(text.slice(0, 1500)) });
+          const entry = { path, status: res.status, head: sanitize(text.slice(0, 1500)) };
+          if ((serverProbe.savePaths ?? []).includes(path) && res.status === 200 && text.length <= 2 * 1024 * 1024) {
+            const dir = join(root, "out", "captured", agentIdForCapture, "http");
+            mkdirSync(dir, { recursive: true });
+            const file = path.replace(/[^a-z0-9]+/gi, "_").replace(/^_|_$/g, "") || "root";
+            const dest = join(dir, `${file}.json`);
+            writeFileSync(dest, text);
+            entry.saved = dest.replace(root + "/", "");
+            entry.bytes = text.length;
+          }
+          results.push(entry);
         } catch (err) {
           results.push({ path, error: String(err?.message ?? err).slice(0, 200) });
         }
@@ -354,7 +364,7 @@ if (agent.package) {
 const probes = [];
 for (const command of agent.commands ?? []) {
   if (command.serverProbe) {
-    probes.push(await runServerProbe(command));
+    probes.push(await runServerProbe({ ...command, agentIdForCapture: agent.id }));
   } else if (command.acpFlow) {
     probes.push(await runAcpFlow(command));
   } else if (Array.isArray(command.stdinLines) && command.stdinLines.length) {

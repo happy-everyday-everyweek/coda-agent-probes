@@ -328,7 +328,11 @@
               "/api/openapi.json",
               "/api/docs"
             ],
-            "waitMs": 12000
+            "waitMs": 12000,
+            "savePaths": [
+              "/api/openapi.json",
+              "/api/docs"
+            ]
           }
         }
       ]
