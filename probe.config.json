@@ -255,6 +255,14 @@
         {
           "cmd": "(qodercn --acp --help || qoderclicn --acp --help || true)",
           "timeoutMs": 20000
+        },
+        {
+          "cmd": "qodercn --help 2>&1 | grep -iE 'acp|serve|print|output-format|session-id' | head -20",
+          "timeoutMs": 20000
+        },
+        {
+          "cmd": "qodercn -p --help 2>&1 | head -40",
+          "timeoutMs": 20000
         }
       ]
     },
@@ -279,6 +287,14 @@
         {
           "cmd": "codebuddy --serve --help",
           "timeoutMs": 20000
+        },
+        {
+          "cmd": "codebuddy --acp",
+          "timeoutMs": 30000,
+          "acpFlow": {
+            "prompt": "Reply with exactly one word: pong",
+            "timeoutMs": 25000
+          }
         }
       ]
     },
@@ -289,19 +305,19 @@
       "needsAuth": true,
       "commands": [
         {
-          "cmd": "kimi --version",
+          "cmd": "ls -d ~/.kimi ~/.local/bin ~/.kimi-code 2>/dev/null; echo '---'; export PATH=\"$HOME/.kimi/bin:$HOME/.kimi-code/bin:$HOME/.local/bin:$PATH\"; which kimi || echo NOT_FOUND",
           "timeoutMs": 20000
         },
         {
-          "cmd": "kimi --help",
+          "cmd": "export PATH=\"$HOME/.kimi/bin:$HOME/.kimi-code/bin:$HOME/.local/bin:$PATH\"; kimi --version || true",
           "timeoutMs": 20000
         },
         {
-          "cmd": "kimi acp --help",
+          "cmd": "export PATH=\"$HOME/.kimi/bin:$HOME/.kimi-code/bin:$HOME/.local/bin:$PATH\"; kimi --help || true",
           "timeoutMs": 20000
         },
         {
-          "cmd": "kimi web --help",
+          "cmd": "export PATH=\"$HOME/.kimi/bin:$HOME/.kimi-code/bin:$HOME/.local/bin:$PATH\"; kimi acp --help || true",
           "timeoutMs": 20000
         }
       ]
@@ -323,6 +339,14 @@
         {
           "cmd": "openclaw acp --help",
           "timeoutMs": 30000
+        },
+        {
+          "cmd": "openclaw acp",
+          "timeoutMs": 30000,
+          "acpFlow": {
+            "prompt": "ping",
+            "timeoutMs": 25000
+          }
         }
       ]
     },
@@ -343,6 +367,14 @@
         {
           "cmd": "fx acp --help",
           "timeoutMs": 20000
+        },
+        {
+          "cmd": "fx acp",
+          "timeoutMs": 30000,
+          "acpFlow": {
+            "prompt": "ping",
+            "timeoutMs": 25000
+          }
         }
       ]
     },
