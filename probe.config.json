@@ -73,7 +73,8 @@
         {
           "cmd": "codex app-server generate-json-schema --out /tmp/probe-out/codex-schema",
           "timeoutMs": 120000,
-          "captureDir": "/tmp/probe-out/codex-schema"
+          "captureDir": "/tmp/probe-out/codex-schema",
+          "captureFull": true
         }
       ]
     },
@@ -102,6 +103,14 @@
             "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1,\"clientCapabilities\":{\"fs\":{\"readTextFile\":false,\"writeTextFile\":false}},\"clientInfo\":{\"name\":\"coda-probe\",\"version\":\"0.0.1\"}}}",
             "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"session/new\",\"params\":{\"cwd\":\"/tmp\",\"mcpServers\":[]}}"
           ]
+        },
+        {
+          "cmd": "gemini --acp",
+          "timeoutMs": 60000,
+          "acpFlow": {
+            "prompt": "Reply with exactly one word: pong",
+            "timeoutMs": 50000
+          }
         }
       ]
     },
@@ -138,6 +147,14 @@
             "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":1,\"clientCapabilities\":{\"fs\":{\"readTextFile\":false,\"writeTextFile\":false}},\"clientInfo\":{\"name\":\"coda-probe\",\"version\":\"0.0.1\"}}}",
             "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"session/new\",\"params\":{\"cwd\":\"/tmp\",\"mcpServers\":[]}}"
           ]
+        },
+        {
+          "cmd": "opencode acp",
+          "timeoutMs": 120000,
+          "acpFlow": {
+            "prompt": "Reply with exactly one word: pong",
+            "timeoutMs": 100000
+          }
         }
       ]
     },

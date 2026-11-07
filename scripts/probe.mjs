@@ -156,6 +156,78 @@ function runSync({ cmd, timeoutMs = 20000, stdin = null, captureDir = null, capt
   };
 }
 
+/** ACP 动态流程：initialize → session/new → session/prompt，收集全部帧直到结束或超时。 */
+function runAcpFlow({ cmd, acpFlow, timeoutMs = 120000 }) {
+  return new Promise((resolve) => {
+    const started = Date.now();
+    const child = spawn("bash", ["-lc", cmd], { cwd: root, env: SAFE_ENV, stdio: ["pipe", "pipe", "pipe"] });
+    const lines = [];
+    let stderr = "";
+    let finished = false;
+    let nextId = 1;
+    let sessionId = null;
+    const timers = [];
+    const finish = (extra = {}) => {
+      if (finished) return;
+      finished = true;
+      for (const t of timers) clearTimeout(t);
+      try { child.kill("SIGKILL"); } catch { /* ignore */ }
+      const raw = lines.join("\n");
+      const parsed = lines.map((line) => {
+        try { return JSON.parse(line); } catch { return { raw: line.slice(0, 500) }; }
+      });
+      resolve({
+        cmd,
+        timeoutMs,
+        exitCode: extra.exitCode ?? null,
+        signal: extra.signal ?? null,
+        timedOut: !!extra.timedOut,
+        durationMs: Date.now() - started,
+        frames: parsed,
+        stdout: sanitize(raw),
+        stderr: sanitize(stderr),
+      });
+    };
+    child.on("error", () => finish({ exitCode: -1 }));
+    child.on("close", (code, signal) => finish({ exitCode: code, signal }));
+    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    const send = (msg) => { try { child.stdin.write(`${JSON.stringify(msg)}\n`); } catch { /* ignore */ } };
+    const handle = (msg) => {
+      if (msg.method === "initialize" || msg.id === 1) send({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: 1, clientCapabilities: { fs: { readTextFile: false, writeTextFile: false } }, clientInfo: { name: "coda-probe", version: "0.0.1" } } });
+    };
+    const reader = createInterface({ input: child.stdout, crlfDelay: Infinity });
+    reader.on("line", (line) => {
+      lines.push(line);
+      let msg;
+      try { msg = JSON.parse(line); } catch { return; }
+      if (msg.id === 1 && msg.result) {
+        send({ jsonrpc: "2.0", id: 2, method: "session/new", params: { cwd: "/tmp", mcpServers: [] } });
+        return;
+      }
+      if (msg.id === 2 && msg.result) {
+        sessionId = msg.result.sessionId ?? null;
+        if (sessionId) {
+          send({
+            jsonrpc: "2.0", id: 3, method: "session/prompt",
+            params: { sessionId, prompt: [{ type: "text", text: String(acpFlow.prompt ?? "ping") }] },
+          });
+        }
+        return;
+      }
+      if (msg.id === 3) {
+        // prompt 响应（含 stopReason）即回合结束
+        finish({ exitCode: 0 });
+      }
+      if (msg.method === "session/update" && msg.params?.update?.sessionUpdate === "turn_end") {
+        finish({ exitCode: 0 });
+      }
+    });
+    // 首次走 initialize
+    send({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: 1, clientCapabilities: { fs: { readTextFile: false, writeTextFile: false } }, clientInfo: { name: "coda-probe", version: "0.0.1" } } });
+    timers.push(setTimeout(() => finish({ timedOut: true, signal: "SIGKILL" }), acpFlow.timeoutMs ?? timeoutMs));
+  });
+}
+
 /** 多行 stdin 交互：先写 line1，等 delay，再写 line2……直到进程退出。 */
 function runInteractive({ cmd, lines = [], timeoutMs = 20000, lineDelayMs = 800 }) {
   return new Promise((resolve) => {
@@ -230,7 +302,9 @@ if (agent.package) {
 
 const probes = [];
 for (const command of agent.commands ?? []) {
-  if (Array.isArray(command.stdinLines) && command.stdinLines.length) {
+  if (command.acpFlow) {
+    probes.push(await runAcpFlow(command));
+  } else if (Array.isArray(command.stdinLines) && command.stdinLines.length) {
     probes.push(await runInteractive({ ...command, lines: command.stdinLines }));
   } else {
     probes.push(runSync({ ...command, agentIdForCapture: agent.id }));
